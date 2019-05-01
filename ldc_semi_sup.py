@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 from sklearn.metrics import accuracy_score
 from sklearn.model_selection import train_test_split
-from sklearn.semi_supervised import LabelPropagation
+from sklearn.semi_supervised import LabelPropagation, LabelSpreading
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 
 # Set up matplotlib to get pretty text
@@ -40,7 +40,7 @@ def self_training(clf, X_l, y_l, X_u, top_k=5):
         # Predict probabilities for classes
         # and select N most probable predictions
         y_prob = clf.predict_proba(X_u)
-        y_prob_max = np.max(y_prob, axis=1)
+        y_prob_max = np.min(y_prob, axis=1)
 
         prob_indices = np.argpartition(y_prob_max, -top_k)[-top_k:]
 
@@ -83,6 +83,21 @@ def propagate_labels(X_u, y_u, X_l, num_unlabeled):
 
     return X_train_lrc, y_train_lrc
 
+def spread_labels(X_u, y_u, X_l, num_unlabeled):
+    # unlabeled samples are represented by -1 in labelprop
+    y_u_placeholder = np.zeros(num_unlabeled) - 1
+
+    X_train_prop = np.concatenate((X_l, X_u), axis=0)
+    y_train_prop = np.concatenate((y_l, y_u_placeholder), axis=0)
+
+    prop = LabelSpreading()
+    prop.fit(X_train_prop, y_train_prop)
+
+    y_train_lrc = prop.transduction_
+
+    X_train_lrc = np.concatenate((X_l, X_u), axis=0)
+
+    return X_train_lrc, y_train_lrc
 
 magic = pd.read_csv('twoGaussians.csv', header=None)
 
@@ -171,7 +186,7 @@ for i, num_unlabeled in enumerate(nums_unlabeled):
             log_probs[j, i, 1] = y_probs
             continue
 
-        X_train_lrc, y_train_lrc = propagate_labels(X_u, y_u, X_l, num_unlabeled)
+        X_train_lrc, y_train_lrc = spread_labels(X_u, y_u, X_l, num_unlabeled)
 
         clf = LinearDiscriminantAnalysis()
         clf.fit(X_train_lrc, y_train_lrc)
