@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 from sklearn.metrics import accuracy_score
-from sklearn.model_selection import train_test_split
+from sklearn.cross_validation import train_test_split
 from sklearn.semi_supervised import LabelPropagation, LabelSpreading
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_squared_error
@@ -195,7 +195,7 @@ def get_label_predict(clf, X):
 
 #Data selection ----------- 1 - Two Gauss , 2 - Cresent Moon, 3 - Classification Data
 dataset = ["Two Gauss", "Cresent Moon Data", "Classification Data", "Regression Data", "Gauss Artif", "Blobs", "Same Covar"]
-data_choice = 2
+data_choice = 1
 if data_choice == 1:
     gauss_data = pd.read_csv('twoGaussians.csv', header=None)
 
@@ -207,16 +207,16 @@ if data_choice == 1:
     y = X_raw[:, -1]
     X = X_raw[:, :-1]
 
-    X = X[:, :2]
-
-    # Check Gen Data
-    plt.scatter(X[:, 0], X[:, 1], c=y, alpha=0.5)
-    plt.show()
+    # X = X[:, :2]
+    #
+    # # Check Gen Data
+    # plt.scatter(X[:, 0], X[:, 1], c=y, alpha=0.5)
+    # plt.show()
 
 elif data_choice == 2:
     X, y = make_moons(10000, shuffle=False, noise=0.1)
-    X = np.flip(X)
-    y = np.flip(y)
+    X = np.flip(X, axis=0)
+    y = np.flip(y, axis=0)
 
     #Check Gen Data
     plt.scatter(X[:, 0], X[:, 1], c=y, alpha=0.5)
@@ -233,8 +233,8 @@ elif data_choice == 3:
 elif data_choice == 4:
     X, y = make_regression(10000, 2)
     y = [1 if i >= 0 else 0 for i in y]
-    X = np.flip(X)
-    y = np.flip(y)
+    X = np.flip(X, axis=0)
+    y = np.flip(y, axis=0)
 
     # Check Gen Data
     plt.scatter(X[:, 0], X[:, 1], c=y, alpha=0.5)
@@ -258,8 +258,8 @@ elif data_choice == 5:
 elif data_choice == 6:
     X, y = make_circles(n_samples=10000, noise=0.5)
     y = [1 if i >= 0 else 0 for i in y]
-    X = np.flip(X)
-    y = np.flip(y)
+    X = np.flip(X, axis=0)
+    y = np.flip(y, axis=0)
 
     # Check Gen Data
     plt.scatter(X[:, 0], X[:, 1], c=y, alpha=0.5)
@@ -284,8 +284,8 @@ elif data_choice == 7:
     plt.show()
 else:
     X, y = np.random.rand(10000, 2), None
-    X = np.flip(X)
-    y = np.flip(y)
+    X = np.flip(X, axis=0)
+    y = np.flip(y, axis=0)
 
     # Check Gen Data
     plt.scatter(X[:, 0], X[:, 1], c=y, alpha=0.5)
@@ -320,19 +320,21 @@ sq_loss = np.ndarray(shape=(N_iterations, len(nums_unlabeled), 3))
 # ######################## --Supervised Learning-- ########################
 print("===\tNow Supervised training\t===\n")
 accuracy_sum_iter = 0
-for t in range(N_iterations):
-    # Set up data for Supervised Learning
-    X_l, X_u, y_l, y_u = prepare_labeled_unlabeled(
-        X_train, y_train, 256, 16
-    )
-    # Train a model supervised on all data
-    clf = LinearRegression()
-    clf.fit(X_l, y_l)
-    y_pred = get_label_predict(clf, X_test) #[1 if i >= 0.5 else 0 for i in clf.predict(X_test)]
-    accuracy_sum_iter = accuracy_sum_iter + (1 - accuracy_score(y_pred=y_pred, y_true=y_test))
+for i, num_unlabeled in enumerate(nums_unlabeled):
+
+    for t in range(N_iterations):
+        # Set up data for Supervised Learning
+        X_l, X_u, y_l, y_u = prepare_labeled_unlabeled(
+            X_train, y_train, num_labeled+num_unlabeled, num_unlabeled
+        )
+        # Train a model supervised on all data
+        clf = LinearRegression()
+        clf.fit(X_l, y_l)
+        y_pred = get_label_predict(clf, X_test) #[1 if i >= 0.5 else 0 for i in clf.predict(X_test)]
+        accuracy_sum_iter = accuracy_sum_iter + (1 - accuracy_score(y_pred=y_pred, y_true=y_test))
 
 print("Average Accuracy from training LRC on 8 per class labelled data (Supervised Leanring): {:.4f}\n".format(
-    accuracy_sum_iter/N_iterations
+    accuracy_sum_iter/(N_iterations*8)
     ))
 
 for i, num_unlabeled in enumerate(nums_unlabeled):

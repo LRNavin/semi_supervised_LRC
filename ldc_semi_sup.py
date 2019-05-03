@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 from sklearn.metrics import accuracy_score
-from sklearn.model_selection import train_test_split
+import sklearn.model_selection as ms
 from sklearn.semi_supervised import LabelPropagation, LabelSpreading
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 
@@ -132,7 +132,7 @@ print("Accuracy from training lda on all data: {:.4f}\n".format(
     ))
 
 # Reserve 20% of data for testing classifiers
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=.2)
+X_train, X_test, y_train, y_test = ms.train_test_split(X, y, test_size=.2)
 
 # Select data for supervised and unsupervised training
 num_labeled = 16
